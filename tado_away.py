@@ -77,6 +77,7 @@ def parse_args():
     parser.add_argument(
         "--password", type=str, default=getpass.getpass(), help="tado password"
     )
+    parser.add_argument("--period", type=int, default=60, help="period in seconds")
     return parser.parse_args()
 
 
@@ -93,4 +94,4 @@ if __name__ == "__main__":
     args = parse_args()
     while True:
         run_once(args)
-        time.sleep(10)
+        time.sleep(args.period)
