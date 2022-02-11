@@ -1,19 +1,26 @@
 import argparse
 import getpass
-import sys
+import logging
+import time
 
 import PyTado.interface as tado
 import rich
 import rich.console
+import rich.logging
 
 console = rich.console.Console()
 
+FORMAT = "%(message)s"
+logging.basicConfig(
+    level="INFO", format=FORMAT, datefmt="[%X]", handlers=[rich.logging.RichHandler()]
+)
+log = logging.getLogger("rich")
 
 # login creates a tado session from input username/password
 def login(args) -> tado.Tado:
-    rich.print("* login...")
+    log.info("login...")
     session = tado.Tado(args.username, args.password)
-    rich.print("* logged")
+    log.info("logged")
     return session
 
 
@@ -34,7 +41,7 @@ def check_open_windows(session: tado.Tado):
         name = zone["name"]
         is_open = is_zone_open(session, zone)
         zstate = "stopped" if is_open else "running"
-        rich.print(f"* zone {name}: {zstate}")
+        log.info(f"zone {name}: {zstate}")
         session.setOpenWindow(is_open)
 
 
@@ -51,7 +58,7 @@ def check_far_from_home(session: tado.Tado):
     # set home/away state accordingly
     state = "home" if any_home else "away"
     state_fn = session.setHome if any_home else session.setAway
-    rich.print(f"+ devices: {state}")
+    log.info(f"devices: {state}")
     state_fn()
 
 
@@ -59,7 +66,6 @@ def main(args):
     session = login(args)
     check_open_windows(session)
     check_far_from_home(session)
-    rich.print("* exit")
     return 0
 
 
@@ -74,11 +80,17 @@ def parse_args():
     return parser.parse_args()
 
 
-if __name__ == "__main__":
+def run_once(args):
     try:
-        args = parse_args()
         ret = main(args)
     except Exception:
         console.print_exception()
         ret = -1
-    sys.exit(ret)
+    return ret
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    while True:
+        run_once(args)
+        time.sleep(10)
