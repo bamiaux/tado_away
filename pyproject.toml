@@ -5,7 +5,7 @@ description = ""
 authors = ["Benoît Amiaux <benoit.amiaux@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.7"
 rich = "^11.2.0"
 python-tado = "^0.13.0"
 
