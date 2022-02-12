@@ -29,36 +29,36 @@ log = logging.getLogger("rich")
 class Context:
     def __init__(self, session: tado.Tado):
         self.session = session
-        self.zones: dict[int, bool] = {}
+        self.zones: dict[int, str] = {}
         self.names: dict[int, str] = {}
-        self.home: bool = None
+        self.home: str = ""
         self.time: float = 0
 
 
 # login creates a tado session from input username/password
-def login(args) -> tado.Tado:
+def login(args: argparse.Namespace) -> tado.Tado:
     log.info("login...")
     session = tado.Tado(args.username, args.password)
     log.info("logged")
     return session
 
 
-def read_is_open(zstate: dict) -> bool:
+def read_is_open(zstate: dict) -> str:
     try:
-        return zstate["openWindow"] is not None
-    except:
-        return False
+        return "close" if zstate["openWindow"] is None else "open"
+    except Exception:
+        return ""
 
 
-def read_previous_is_open(ctx: Context, zid: int) -> bool:
+def read_previous_is_open(ctx: Context, zid: int) -> str:
     try:
         return ctx.zones[zid]
-    except:
-        return None
+    except Exception:
+        return ""
 
 
-def set_open_window(ctx: Context, zid: int, is_open: bool):
-    if is_open:
+def set_open_window(ctx: Context, zid: int, is_open: str):
+    if is_open == "open":
         ctx.session.setOpenWindow(zid)
     else:
         ctx.session.resetOpenWindow(zid)
@@ -77,7 +77,7 @@ def cache_zone_names(ctx: Context):
 def read_zone_name(ctx: Context, zid: int) -> str:
     try:
         return ctx.names[zid]
-    except:
+    except Exception:
         return "unknown"
 
 
@@ -102,23 +102,23 @@ def check_open_windows(ctx: Context):
         # update context with latest known state
         ctx.zones[zid] = is_open
         name = read_zone_name(ctx, zid)
-        zstate = "stopped" if is_open else "running"
-        log.info(f"zone {name}: {zstate}")
+        log.info(f"zone {name}: {is_open.capitalize()}")
 
 
-def is_any_device_home(ctx: Context) -> bool:
+def is_any_device_home(ctx: Context) -> str:
     # do not set away mode if no devices are found
     devices = ctx.session.getMobileDevices()
     if devices is None:
-        return True
+        return "home"
 
     for device in devices:
         # rich.inspect(device, docs=False)
         if not device["settings"]["geoTrackingEnabled"]:
             continue
         if device["location"]["atHome"]:
-            return True
-    return False
+            return "home"
+
+    return "away"
 
 
 # check_far_from_hone checks whether any device
@@ -133,11 +133,10 @@ def check_far_from_home(ctx: Context):
     state_fn = ctx.session.setHome if any_home else ctx.session.setAway
     state_fn()
     ctx.home = any_home
-    state = "home" if any_home else "away"
-    log.info(f"state: {state}")
+    log.info(f"geo: {ctx.home.capitalize()}")
 
 
-def refresh_context(ctx: Context, args):
+def refresh_context(ctx: Context, args: argparse.Namespace):
     # rich.inspect(ctx)
     now = time.time()
     duration = int(now - ctx.time)
@@ -145,13 +144,13 @@ def refresh_context(ctx: Context, args):
         return
 
     log.info("caching...")
-    ctx.home = None
+    ctx.home = ""
     ctx.zones = {}
     cache_zone_names(ctx)
     ctx.time = now
 
 
-def main(ctx: Context, args):
+def main(ctx: Context, args: argparse.Namespace):
     refresh_context(ctx, args)
     check_open_windows(ctx)
     check_far_from_home(ctx)
@@ -176,7 +175,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_once(args):
+def run_once(args: argparse.Namespace):
     session = login(args)
     ctx = Context(session)
     while True:
