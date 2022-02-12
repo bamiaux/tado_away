@@ -22,7 +22,7 @@ class Context:
         self.session = session
         self.zones: dict[int, bool] = {}
         self.names: dict[int, str] = {}
-        self.home: bool | None = None
+        self.home: bool = None
         self.time: float = 0
 
 
@@ -41,7 +41,7 @@ def read_is_open(zstate: dict) -> bool:
         return False
 
 
-def read_previous_is_open(ctx: Context, zid: int) -> bool | None:
+def read_previous_is_open(ctx: Context, zid: int) -> bool:
     try:
         return ctx.zones[zid]
     except:
