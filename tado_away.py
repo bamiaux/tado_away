@@ -10,10 +10,19 @@ import rich.logging
 
 console = rich.console.Console()
 
+
+class Handler(rich.logging.RichHandler):
+    def emit(self, record: logging.LogRecord) -> None:
+        # filter oauth token refresh which are at info level
+        if record.filename == "interface.py" and record.lineno == 149:
+            log.info("...")
+            return
+        # rich.inspect(record)
+        return super().emit(record)
+
+
 FORMAT = "%(message)s"
-logging.basicConfig(
-    level="INFO", format=FORMAT, datefmt="[%X]", handlers=[rich.logging.RichHandler()]
-)
+logging.basicConfig(level="INFO", format=FORMAT, datefmt="[%X]", handlers=[Handler()])
 log = logging.getLogger("rich")
 
 
