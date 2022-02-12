@@ -56,13 +56,6 @@ def read_previous_is_open(ctx: Context, zid: int) -> str:
         return ""
 
 
-def set_open_window(ctx: Context, zid: int, is_open: str):
-    if is_open == "open":
-        ctx.session.setOpenWindow(zid)
-    else:
-        ctx.session.resetOpenWindow(zid)
-
-
 def cache_zone_names(ctx: Context):
     data = ctx.session.getZones()
     if not data:
@@ -97,11 +90,14 @@ def check_open_windows(ctx: Context):
             continue
 
         # if those are different, update them
-        set_open_window(ctx, zid, is_open)
+        set_close, log_it = ctx.session.resetOpenWindow, log.info
+        if is_open == "open":
+            set_close, log_it = ctx.session.setOpenWindow, log.warning
+        set_close(zid)
         # update context with latest known state
         ctx.zones[zid] = is_open
         name = read_zone_name(ctx, zid)
-        log.info(f"zone {name}: {is_open.capitalize()}")
+        log_it(f"zone {name}: {is_open.capitalize()}")
 
 
 def is_any_device_home(ctx: Context) -> str:
@@ -129,10 +125,12 @@ def check_far_from_home(ctx: Context):
         return
 
     # set home/away state accordingly
-    state_fn = ctx.session.setHome if any_home else ctx.session.setAway
-    state_fn()
+    set_away, log_it = ctx.session.setAway, log.warning
+    if any_home:
+        set_away, log_it = ctx.session.setHome, log.info
+    set_away()
     ctx.home = any_home
-    log.info(f"geo: {ctx.home.capitalize()}")
+    log_it(f"geo: {ctx.home.capitalize()}")
 
 
 def refresh_context(ctx: Context, args: argparse.Namespace):
