@@ -14,8 +14,7 @@ console = rich.console.Console()
 class Handler(rich.logging.RichHandler):
     def emit(self, record: logging.LogRecord) -> None:
         # filter oauth token refresh which are at info level
-        if record.filename == "interface.py" and record.lineno == 149:
-            log.info("...")
+        if record.filename == "interface.py" and record.levelname == "INFO":
             return
         # rich.inspect(record)
         return super().emit(record)
