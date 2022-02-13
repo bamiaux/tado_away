@@ -126,7 +126,7 @@ def check_far_from_home(ctx: Context):
 
     # set home/away state accordingly
     set_away, log_it = ctx.session.setAway, log.warning
-    if any_home:
+    if any_home == "home":
         set_away, log_it = ctx.session.setHome, log.info
     set_away()
     ctx.home = any_home
